@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arista Switch Plan — Hawaiʻi Convention Center</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+  :root {
+    --teal:#22A5B7; --teal-light:#F0F9FB; --teal-pale:#EEF7F9;
+    --navy:#0E313A; --navy-light:#E5EEF8;
+    --bg:#F7F5F0; --surface:#FFFFFF; --border:#D8D4CC; --border-light:#EAE7E0;
+    --text:#1A1916; --text-muted:#6B6860; --text-subtle:#9B9890;
+    --green:#157A3A; --green-light:#E8FAF0;
+    --amber:#A04508; --amber-light:#FFFBEB;
+    --purple:#5B1A8C; --purple-light:#F0E6FA;
+    --optic:#8A3A0C; --optic-light:#FEF0BE;
+    --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:13px;line-height:1.6;padding:0}
+  .page{max-width:980px;margin:0 auto;padding:0 24px 40px}
+
+  /* ── Header bar ── */
+  .header-bar{background:#ffffff;padding:0 24px;height:52px;display:flex;align-items:center;margin-bottom:0;border-bottom:1px solid var(--border)}
+  .header-bar img{height:36px;width:auto}
+  .title-band{background:var(--navy);padding:12px 24px 10px}
+  .title-band h1{font-size:20px;font-weight:600;color:#fff;letter-spacing:-.02em;margin-bottom:2px}
+  .title-band .venue{font-size:12px;color:rgba(255,255,255,.7);font-family:var(--mono)}
+  .meta-band{background:var(--teal-pale);border-bottom:1px solid var(--border);padding:7px 24px;display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+  .meta-item{display:flex;gap:8px;font-size:11px;padding:2px 0}
+  .meta-label{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-subtle);white-space:nowrap;padding-top:1px}
+  .meta-val{color:var(--text-muted)}
+
+  /* ── Summary tiles ── */
+  .summary-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin:20px 0 24px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:11px 13px}
+  .tile .t-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-subtle);margin-bottom:3px}
+  .tile .t-val{font-size:20px;font-weight:600;letter-spacing:-.02em;line-height:1;color:var(--navy)}
+  .tile .t-desc{font-size:10px;color:var(--text-muted);margin-top:2px}
+
+  /* ── Topology callout ── */
+  .topology{background:var(--navy);border-radius:8px;padding:16px 20px;margin-bottom:28px;display:flex;gap:24px;align-items:flex-start}
+  .topo-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:6px}
+  .topo-val{font-size:12px;color:#fff;line-height:1.5}
+  .topo-block{flex:1}
+  .topo-divider{width:1px;background:rgba(255,255,255,.15);align-self:stretch}
+
+  /* ── Phase sections ── */
+  .phase{margin-bottom:32px}
+  .phase-banner{padding:10px 16px;border-radius:6px 6px 0 0;display:flex;align-items:baseline;gap:12px}
+  .phase-banner.p1{background:var(--navy)}
+  .phase-banner.p2{background:var(--green)}
+  .phase-title{font-size:13px;font-weight:600;color:#fff;font-family:var(--mono);letter-spacing:.04em}
+  .phase-sub{font-size:11px;color:rgba(255,255,255,.65)}
+  section{margin-bottom:18px}
+  .section-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-subtle);padding-bottom:7px;border-bottom:1px solid var(--border-light);margin-bottom:12px}
+
+  /* ── Cards ── */
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .cards.single{grid-template-columns:1fr}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .card.spare{border-color:#D9A94A}
+  .card.upgrade{border-color:var(--teal);border-style:dashed}
+  .card-head{padding:9px 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-light)}
+  .c-series{font-family:var(--mono);font-size:11px;font-weight:500}
+  .badge{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:3px;font-weight:500}
+  .badge-sm   {background:var(--navy-light);color:var(--navy)}
+  .badge-poe  {background:var(--green-light);color:var(--green)}
+  .badge-spare{background:var(--amber-light);color:var(--amber)}
+  .badge-optic{background:var(--optic-light);color:var(--optic)}
+  .badge-upgrade{background:var(--teal-light);color:var(--teal)}
+  .card-body{padding:12px 13px}
+  .model-name{font-size:14px;font-weight:600;letter-spacing:-.01em;margin-bottom:1px;color:var(--navy)}
+  .model-sub{font-size:11px;color:var(--text-muted);margin-bottom:10px}
+  .specs{border-top:1px solid var(--border-light);padding-top:8px}
+  .spec{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:1px dotted var(--border-light);font-size:11px}
+  .spec:last-child{border-bottom:none}
+  .sk{color:var(--text-muted)}
+  .sv{font-family:var(--mono);font-size:10px;font-weight:500}
+  .sv.hi{color:var(--navy);font-weight:600}
+  .sv.teal{color:var(--teal);font-weight:600}
+  .qty-row{margin-top:10px;display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg);border-radius:4px;border:1px solid var(--border-light)}
+  .qty-num{font-size:18px;font-weight:600;letter-spacing:-.02em;color:var(--navy)}
+  .qty-num.green{color:var(--green)}
+  .qty-num.amber{color:var(--amber)}
+  .qty-label{font-size:11px;color:var(--text-muted)}
+  .msrp-pill{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:500;background:var(--navy-light);color:var(--navy);border-radius:3px;padding:2px 7px;margin-top:8px}
+  .msrp-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+
+  /* ── Upgrade callout ── */
+  .upgrade-callout{background:var(--teal-light);border:1px solid var(--teal);border-radius:6px;padding:11px 14px;margin-top:10px;font-size:11px}
+  .upgrade-callout .uc-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:4px;font-weight:500}
+  .upgrade-callout .uc-body{color:var(--text-muted);line-height:1.5}
+  .upgrade-callout .uc-delta{font-family:var(--mono);font-weight:600;color:var(--navy)}
+
+  /* ── Optics grid ── */
+  .optics-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .optic-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:11px 13px}
+  .oc-type{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+  .oc-model{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:2px}
+  .oc-msrp{font-family:var(--mono);font-size:10px;color:var(--green);font-weight:500;margin-bottom:3px}
+  .oc-qty{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--navy);margin-bottom:3px}
+  .oc-desc{font-size:11px;color:var(--text-muted)}
+
+  /* ── Support cards ── */
+  .svc-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .svc-card{background:var(--purple-light);border:1px solid #D8B4FE;border-radius:6px;padding:11px 13px}
+  .svc-sku{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--purple);margin-bottom:3px}
+  .svc-desc{font-size:11px;color:var(--text-muted);margin-bottom:6px}
+  .svc-rates{display:flex;gap:10px;flex-wrap:wrap}
+  .svc-rate .rate-val{font-family:var(--mono);font-weight:600;color:var(--navy)}
+  .svc-rate .rate-label{color:var(--text-subtle);font-size:11px}
+
+  /* ── Notes table ── */
+  .notes-table{width:100%;border-collapse:collapse;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .notes-table th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-subtle);text-align:left;padding:6px 12px;border-bottom:1px solid var(--border);background:var(--bg)}
+  .notes-table td{padding:8px 12px;border-bottom:1px solid var(--border-light);vertical-align:top;line-height:1.5}
+  .notes-table tr:last-child td{border-bottom:none}
+  .notes-table td:first-child{font-family:var(--mono);font-size:10px;font-weight:500;white-space:nowrap;color:var(--text-muted);width:200px}
+
+  /* ── Footer ── */
+  .footer-bar{background:var(--navy);margin-top:32px;padding:14px 24px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.5)}
+
+  @media print{body{background:#fff}.page{padding:0 16px}.card,.optic-card,.svc-card{break-inside:avoid}.header-bar,.title-band,.meta-band{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header-bar">
+  <img src="data:image/png;base64,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" alt="Rectitude 369">
+</div>
+<div class="title-band">
+  <h1>Arista Network Switch Deployment Plan</h1>
+  <div class="venue">Hawaiʻi Convention Center &nbsp;·&nbsp; Honolulu, O'ahu &nbsp;·&nbsp; Two-Phase Rollout &nbsp;·&nbsp; April 2026</div>
+</div>
+<div class="meta-band">
+  <div class="meta-item"><span class="meta-label">Prepared by</span><span class="meta-val">Rectitude 369, LLC</span></div>
+  <div class="meta-item"><span class="meta-label">Client</span><span class="meta-val">Hawaiʻi Convention Center / HVCB</span></div>
+  <div class="meta-item"><span class="meta-label">Status</span><span class="meta-val">Draft — Pending Arista SE Review &amp; Site Visit</span></div>
+  <div class="meta-item"><span class="meta-label">MSRP source</span><span class="meta-val">Arista April 2026 USD Price List</span></div>
+  <div class="meta-item"><span class="meta-label">Design</span><span class="meta-val">MLAG Active/Standby · Dual 10GBase IDF Uplinks</span></div>
+  <div class="meta-item"><span class="meta-label">Core switch</span><span class="meta-val">DCS-7050SX3-24YC4C-S-F (Campus Spline)</span></div>
+</div>
+
+<div class="page">
+
+<!-- Summary tiles -->
+<div class="summary-bar">
+  <div class="tile"><div class="t-label">Total Switches</div><div class="t-val">19</div><div class="t-desc">Both phases + 1 spare</div></div>
+  <div class="tile"><div class="t-label">Phase 1 Hardware</div><div class="t-val">15</div><div class="t-desc">Q2/Q3 2026 incl. spare</div></div>
+  <div class="tile"><div class="t-label">Phase 2 Hardware</div><div class="t-val">4</div><div class="t-desc">Q4 2027 new IDFs</div></div>
+  <div class="tile"><div class="t-label">IDF Uplinks</div><div class="t-val">2×</div><div class="t-desc">10GBase per IDF (MLAG)</div></div>
+  <div class="tile"><div class="t-label">Total Optics</div><div class="t-val">84</div><div class="t-desc">68× LR + 16× SR</div></div>
+  <div class="tile"><div class="t-label">MDF Core Pair</div><div class="t-val">2</div><div class="t-desc">MLAG active/standby</div></div>
+</div>
+
+<!-- Topology callout -->
+<div class="topology">
+  <div class="topo-block">
+    <div class="topo-label">MLAG Design</div>
+    <div class="topo-val">Active/standby MLAG — each IDF has one 10GBase uplink to Core-A and one to Core-B. Traffic flows over primary; standby assumes on core failure. Core pair operates as a single MLAG domain.</div>
+  </div>
+  <div class="topo-divider"></div>
+  <div class="topo-block">
+    <div class="topo-label">Uplink Speed</div>
+    <div class="topo-val">10GBase — SFP-10G-LR (SM) or SFP-10G-SR (MM) in the 7050SX3-24YC4C's SFP28 ports at full speed. Copper access ports remain 1G RJ45. Upgrade to 25G: swap SFP-10G-LR/SR transceivers for SFP-25G-LR/SR — no recabling, no switch hardware change.</div>
+  </div>
+  <div class="topo-divider"></div>
+  <div class="topo-block">
+    <div class="topo-label">Fiber Plant</div>
+    <div class="topo-val">12 Phase 1 IDFs: 8 single mode (SFP-10G-LR) + 4 legacy multimode (SFP-10G-SR, confirmed functional). Phase 2: all SM. MM→SM optic swap at Phase 2 — no switch hardware change.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PHASE 1 -->
+<div class="phase">
+  <div class="phase-banner p1">
+    <span class="phase-title">PHASE 1 — Q2/Q3 2026</span>
+    <span class="phase-sub">Core spline establishment · 12 IDF deployments · Mixed MM/SM · Dual 10GBase uplinks per IDF</span>
+  </div>
+
+  <section style="margin-top:16px">
+    <div class="section-label">Core — MDF Campus Spline (MLAG Pair)</div>
+    <div class="cards single">
+      <div class="card">
+        <div class="card-head"><span class="c-series">DCS-7050SX3-24YC4C-S-F — Arista 7050X3 Series</span><span class="badge badge-sm">Campus Spline · MLAG Pair</span></div>
+        <div class="card-body">
+          <div class="model-name">DCS-7050SX3-24YC4C-S-F</div>
+          <div class="model-sub">Arista 7050X3 — 24×1/10/25G SFP28 + 4×100G QSFP28 — Front-to-Rear Airflow — Dual AC PSU</div>
+          <div class="specs">
+            <div class="spec"><span class="sk">IDF-facing ports</span><span class="sv hi">24 × 1/10/25G SFP28 — native 10G/25G, full speed</span></div>
+            <div class="spec"><span class="sk">Uplink ports</span><span class="sv">4 × 100G QSFP28 — unused in this design</span></div>
+            <div class="spec"><span class="sk">IDF connections</span><span class="sv hi">1 × 10GBase uplink from each IDF terminates here (active or standby)</span></div>
+            <div class="spec"><span class="sk">MLAG peer-link</span><span class="sv">2× 10GBase SFP-10G-LR between Core-A and Core-B (4 optics total)</span></div>
+            <div class="spec"><span class="sk">Ports used / available</span><span class="sv">Phase 1: 14 of 24 · Phase 2: 18 of 24</span></div>
+            <div class="spec"><span class="sk">PoE</span><span class="sv">None — fiber/SFP only</span></div>
+            <div class="spec"><span class="sk">PSU</span><span class="sv">Dual AC redundant (hot-swap)</span></div>
+            <div class="spec"><span class="sk">OS</span><span class="sv">Arista EOS / CloudVision CUE</span></div>
+          </div>
+          <div class="msrp-row">
+            <span class="msrp-pill">MSRP $25,994 ea</span>
+            <span class="msrp-pill">Ext: $51,988 (×2)</span>
+            <span class="msrp-pill" style="background:var(--purple-light);color:var(--purple)">A-Care NBD: $135/mo ea · 5-yr: $16,200 total</span>
+          </div>
+
+          <div class="qty-row"><div class="qty-num">2</div><div class="qty-label">units &nbsp;·&nbsp; Core-A + Core-B MLAG pair &nbsp;·&nbsp; Phase 1</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">24-Port Edge Switches — 7× Standard IDFs</div>
+    <div class="cards single">
+      <div class="card">
+        <div class="card-head"><span class="c-series">CCS-720XP-24Y6-2F-NA — Dual PSU</span><span class="badge badge-poe">PoE+ · 30W/port</span></div>
+        <div class="card-body">
+          <div class="model-name">CCS-720XP-24Y6-2F-NA</div>
+          <div class="model-sub">Arista 720XP 24×1G RJ45 PoE+ + 6×25G SFP28 — Cognitive Campus Leaf</div>
+          <div class="specs">
+            <div class="spec"><span class="sk">Access ports</span><span class="sv">24 × 1G RJ45 (end devices — copper only)</span></div>
+            <div class="spec"><span class="sk">PoE standard</span><span class="sv">802.3af/at (30W/port)</span></div>
+            <div class="spec"><span class="sk">PoE budget</span><span class="sv">~1,113W (dual PSU)</span></div>
+            <div class="spec"><span class="sk">Uplink ports</span><span class="sv">6 × 25G SFP28 (10G/25G multi-rate — running at 10G)</span></div>
+            <div class="spec"><span class="sk">IDF uplinks</span><span class="sv hi">2× 10GBase — Link-A → Core-A, Link-B → Core-B</span></div>
+            <div class="spec"><span class="sk">Fiber type</span><span class="sv">Mixed — 4 IDFs MM (SFP-10G-SR), remainder SM (SFP-10G-LR)</span></div>
+          </div>
+          <div class="msrp-row">
+            <span class="msrp-pill">MSRP $10,107 ea</span>
+            <span class="msrp-pill">Ext: $70,749 (×7)</span>
+            <span class="msrp-pill" style="background:var(--purple-light);color:var(--purple)">A-Care NBD: $32/mo ea · 5-yr: $13,440 total</span>
+          </div>
+          <div class="qty-row"><div class="qty-num">7</div><div class="qty-label">units &nbsp;·&nbsp; Phase 1 standard IDFs</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">48-Port Edge Switches — 5× High-Density IDFs + 1× Cold Spare</div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-head"><span class="c-series">CCS-720XP-48Y6-2F-NA — Active (×5)</span><span class="badge badge-poe">PoE+ · 30W/port</span></div>
+        <div class="card-body">
+          <div class="model-name">CCS-720XP-48Y6-2F-NA</div>
+          <div class="model-sub">Arista 720XP 48×1G RJ45 PoE+ + 6×25G SFP28 — Dual PSU</div>
+          <div class="specs">
+            <div class="spec"><span class="sk">Access ports</span><span class="sv">48 × 1G RJ45 (end devices — copper only)</span></div>
+            <div class="spec"><span class="sk">PoE budget</span><span class="sv">~1,925W (dual PSU)</span></div>
+            <div class="spec"><span class="sk">IDF uplinks</span><span class="sv hi">2× 10GBase SM → MLAG core pair</span></div>
+          </div>
+          <div class="msrp-row">
+            <span class="msrp-pill">MSRP $12,900 ea</span>
+            <span class="msrp-pill">Ext: $64,500 (×5)</span>
+            <span class="msrp-pill" style="background:var(--purple-light);color:var(--purple)">A-Care NBD: $39/mo ea · 5-yr: $11,700 total</span>
+          </div>
+          <div class="qty-row"><div class="qty-num">5</div><div class="qty-label">active units &nbsp;·&nbsp; Phase 1 high-density IDFs</div></div>
+        </div>
+      </div>
+      <div class="card spare">
+        <div class="card-head"><span class="c-series">CCS-720XP-48Y6-2F-NA — Cold Spare</span><span class="badge badge-spare">Spare</span></div>
+        <div class="card-body">
+          <div class="model-name">CCS-720XP-48Y6-2F-NA</div>
+          <div class="model-sub">Identical to active units — stored unracked in MDF</div>
+          <div class="specs">
+            <div class="spec"><span class="sk">Coverage</span><span class="sv">Any active 48-port IDF unit</span></div>
+            <div class="spec"><span class="sk">Storage</span><span class="sv">MDF — unracked until needed</span></div>
+          </div>
+          <div class="msrp-row">
+            <span class="msrp-pill">MSRP $12,900</span>
+            <span class="msrp-pill" style="background:var(--purple-light);color:var(--purple)">A-Care NBD: $39/mo · 5-yr: $2,340</span>
+          </div>
+          <div class="qty-row" style="background:var(--amber-light);border-color:#D9A94A">
+            <div class="qty-num amber">1</div><div class="qty-label">cold spare &nbsp;·&nbsp; Phase 1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">Phase 1 — Optics &amp; DAC (10GBase)</div>
+    <div class="optics-grid">
+      <div class="optic-card">
+        <div class="oc-type" style="color:var(--teal)">DAC Twinax · MLAG Peer-Link</div>
+        <div class="oc-model">CAB-S-S-25G-3M</div>
+        <div class="oc-msrp">$240 ea · Ext: $480</div>
+        <div class="oc-qty">2 cables — 1 per redundant peer-link</div>
+        <div class="oc-desc">25GbE SFP25↔SFP25 DAC twinax, 3m. Runs directly between Core-A and Core-B SFP28 ports in MDF. No optics or fiber patch required.</div>
+      </div>
+      <div class="optic-card">
+        <div class="oc-type" style="color:var(--navy)">SM Fiber · SFP+ · IDF Uplinks — Core-Side</div>
+        <div class="oc-model">SFP-10G-LR</div>
+        <div class="oc-msrp">$595 ea · Ext: $9,520</div>
+        <div class="oc-qty">16 optics — 8 SM IDFs × 2 uplinks · seats in 7050SX3-24YC4C</div>
+        <div class="oc-desc">10GBASE-LR SM, 1310nm, 10km. Seats in the core switch SFP28 downlink ports — one per uplink terminating at Core-A or Core-B.</div>
+      </div>
+      <div class="optic-card">
+        <div class="oc-type" style="color:var(--navy)">SM Fiber · SFP+ · IDF Uplinks — IDF-Side</div>
+        <div class="oc-model">SFP-10G-LR</div>
+        <div class="oc-msrp">$595 ea · Ext: $9,520</div>
+        <div class="oc-qty">16 optics — 8 SM IDFs × 2 uplinks · seats in 720XP SFP28</div>
+        <div class="oc-desc">10GBASE-LR SM, 1310nm, 10km. Seats in the 720XP SFP28 uplink ports — one per uplink at each IDF switch.</div>
+      </div>
+      <div class="optic-card">
+        <div class="oc-type" style="color:var(--optic)">MM Fiber · SFP+ · Legacy IDF Uplinks — Core-Side</div>
+        <div class="oc-model">SFP-10G-SR</div>
+        <div class="oc-msrp">$445 ea · Ext: $3,560</div>
+        <div class="oc-qty">8 optics — 4 MM IDFs × 2 uplinks · seats in 7050SX3-24YC4C</div>
+        <div class="oc-desc">10GBASE-SR MM, 850nm. Seats in core switch SFP28 downlink ports. Legacy MM runs confirmed functional. Replaced with SFP-10G-LR at Phase 2.</div>
+      </div>
+      <div class="optic-card">
+        <div class="oc-type" style="color:var(--optic)">MM Fiber · SFP+ · Legacy IDF Uplinks — IDF-Side</div>
+        <div class="oc-model">SFP-10G-SR</div>
+        <div class="oc-msrp">$445 ea · Ext: $3,560</div>
+        <div class="oc-qty">8 optics — 4 MM IDFs × 2 uplinks · seats in 720XP SFP28</div>
+        <div class="oc-desc">10GBASE-SR MM, 850nm. Seats in 720XP SFP28 uplink ports at each legacy IDF. Replaced with SFP-10G-LR at Phase 2.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">Phase 1 — 25G Optic Upgrade Option</div>
+    <div class="upgrade-callout">
+      <div class="uc-label">25G Optic Upgrade — Phase 1</div>
+      <div class="uc-body">Both core and IDF switches are already 25G-capable. Upgrading to 25G is a transceiver-only swap — no switch hardware changes, no recabling required.<br><br>
+        <span class="uc-delta">32× SFP-25G-LR</span> &nbsp;(SM IDF uplinks — core-side + IDF-side) &nbsp;@ $1,595 ea = <span class="uc-delta">$50,840</span><br>
+        <span class="uc-delta">16× SFP-25G-SR</span> &nbsp;(MM — 4 legacy MM IDF uplinks) &nbsp;@ $795 ea = <span class="uc-delta">$12,720</span><br><br>
+        <strong style="color:var(--navy)">Phase 1 total — 25G optics: $63,560</strong> &nbsp;·&nbsp; <span style="color:var(--text-muted)">vs. $26,640 at 10G (excl. DAC) &nbsp;·&nbsp; upgrade delta: +$36,920</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">Phase 1 — A-Care 5-Year Support (NBD)</div>
+    <div class="svc-row">
+      <div class="svc-card">
+        <div class="svc-sku">SVC-7050SX3-24YC4CS-1M-NB</div>
+        <div class="svc-desc">Core spline — DCS-7050SX3-24YC4C-S-F (×2)</div>
+        <div class="svc-rates">
+          <div class="svc-rate"><span class="rate-val">$135</span><span class="rate-label">/mo per unit</span></div>
+          <div class="svc-rate"><span class="rate-val">$16,200</span><span class="rate-label"> · 5-yr total (×2)</span></div>
+        </div>
+      </div>
+      <div class="svc-card">
+        <div class="svc-sku">SVC-720XP-24Y6-1M-NB</div>
+        <div class="svc-desc">24-port edge switches (×7)</div>
+        <div class="svc-rates">
+          <div class="svc-rate"><span class="rate-val">$32</span><span class="rate-label">/mo per unit</span></div>
+          <div class="svc-rate"><span class="rate-val">$13,440</span><span class="rate-label"> · 5-yr total (×7)</span></div>
+        </div>
+      </div>
+      <div class="svc-card">
+        <div class="svc-sku">SVC-720XP-48Y6-1M-NB</div>
+        <div class="svc-desc">48-port edge + cold spare (×6)</div>
+        <div class="svc-rates">
+          <div class="svc-rate"><span class="rate-val">$39</span><span class="rate-label">/mo per unit</span></div>
+          <div class="svc-rate"><span class="rate-val">$14,040</span><span class="rate-label"> · 5-yr total (×6)</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">Phase 1 — CloudVision CUE &amp; Accessories</div>
+    <div class="optics-grid">
+      <div class="optic-card">
+        <div class="oc-type" style="color:var(--purple)">License · per switch/month</div>
+        <div class="oc-model">SS-CVSC-G2-SWITCH-1M</div>
+        <div class="oc-msrp">$26/switch/month (April 2026)</div>
+        <div class="oc-qty">15 switches Phase 1</div>
+        <div class="oc-desc">CloudVision CUE — Group 2 (1G/mG platforms). $26 × 15 = $390/mo. Confirm annual/multi-yr term with SE for reduced rate.</div>
+      </div>
+      <div class="optic-card">
+        <div class="oc-type" style="color:var(--text-muted)">Accessory</div>
+        <div class="oc-model">4-Post Rack Mount Kit</div>
+        <div class="oc-msrp">TBD — confirm with SE</div>
+        <div class="oc-qty">15 units Phase 1</div>
+        <div class="oc-desc">1U, 720XP and 7050SX3 compatible. 1 per switch. Confirm Arista-supplied vs. third-party per IDF rack type.</div>
+      </div>
+      <div class="optic-card" style="background:var(--navy-light)">
+        <div class="oc-type" style="color:var(--navy)">Phase 1 MSRP Summary</div>
+        <div class="oc-model" style="color:var(--navy)">Switches + Optics</div>
+        <div class="oc-msrp" style="font-size:13px">$227,167 hardware MSRP</div>
+        <div class="oc-qty" style="color:var(--purple)">+ $43,680 · 5-yr A-Care MSRP</div>
+        <div class="oc-desc">Core ($51,988) + 24-port ($70,749) + 48-port active ($64,500) + spare ($12,900) + optics ($26,640) — excl. TBD rack kits &amp; CUE.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ═══════════════════ PHASE 2 -->
+<div class="phase">
+  <div class="phase-banner p2">
+    <span class="phase-title">PHASE 2 — Q4 2027</span>
+    <span class="phase-sub">MM→SM optic migration · 4 new IDFs (Rooms 335, 334, 320, 339) · All 10GBase SM</span>
+  </div>
+
+  <section style="margin-top:16px">
+    <div class="section-label">Multimode → Single Mode Migration (4 Existing IDFs — optic swap only)</div>
+    <div class="cards single">
+      <div class="card">
+        <div class="card-head"><span class="c-series">SFP-10G-SR → SFP-10G-LR Swap at 4 Legacy IDFs</span><span class="badge badge-sm">No Switch Hardware Change</span></div>
+        <div class="card-body">
+          <div class="model-name">SFP-10G-LR &nbsp;<span style="font-size:12px;font-weight:400;color:var(--text-muted)">(replaces Phase 1 SFP-10G-SR)</span></div>
+          <div class="model-sub">16 optics — 4 legacy IDFs × 2 uplinks × 2 ends</div>
+          <div class="specs">
+            <div class="spec"><span class="sk">Action</span><span class="sv">Pull SFP-10G-SR, install SFP-10G-LR at IDF + core SFP ports</span></div>
+            <div class="spec"><span class="sk">Downtime</span><span class="sv">Brief per-IDF link-down — coordinate with facility ops</span></div>
+            <div class="spec"><span class="sk">After swap</span><span class="sv">Phase 1 SFP-10G-SR optics retained as spares</span></div>
+            <div class="spec"><span class="sk">MSRP</span><span class="sv">$595 × 16 = $9,520</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">24-Port Edge Switches — 4 New IDFs (All Single Mode)</div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-head"><span class="c-series">Room 335 &amp; Room 334</span><span class="badge badge-poe">PoE+ · 10GBase SM Uplinks</span></div>
+        <div class="card-body">
+          <div class="model-name">CCS-720XP-24Y6-2F-NA</div>
+          <div class="model-sub">Arista 720XP 24×1G RJ45 PoE+ + 6×25G SFP28 — Dual PSU</div>
+          <div class="specs">
+            <div class="spec"><span class="sk">IDF uplinks</span><span class="sv hi">2× 10GBase SM → MLAG core pair</span></div>
+            <div class="spec"><span class="sk">Fiber</span><span class="sv">Single mode only (SFP-10G-LR)</span></div>
+          </div>
+          <div class="msrp-row">
+            <span class="msrp-pill">$10,107 ea · Ext: $20,214</span>
+            <span class="msrp-pill" style="background:var(--purple-light);color:var(--purple)">A-Care: $32/mo ea · 5-yr: $1,840</span>
+          </div>
+          <div class="qty-row"><div class="qty-num green">2</div><div class="qty-label">units &nbsp;·&nbsp; Room 335 + Room 334</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="c-series">Room 320 &amp; Room 339</span><span class="badge badge-poe">PoE+ · 10GBase SM Uplinks</span></div>
+        <div class="card-body">
+          <div class="model-name">CCS-720XP-24Y6-2F-NA</div>
+          <div class="model-sub">Arista 720XP 24×1G RJ45 PoE+ + 6×25G SFP28 — Dual PSU</div>
+          <div class="specs">
+            <div class="spec"><span class="sk">IDF uplinks</span><span class="sv hi">2× 10GBase SM → MLAG core pair</span></div>
+            <div class="spec"><span class="sk">Fiber</span><span class="sv">Single mode only (SFP-10G-LR)</span></div>
+          </div>
+          <div class="msrp-row">
+            <span class="msrp-pill">$10,107 ea · Ext: $20,214</span>
+            <span class="msrp-pill" style="background:var(--purple-light);color:var(--purple)">A-Care: $32/mo ea · 5-yr: $1,840</span>
+          </div>
+          <div class="qty-row"><div class="qty-num green">2</div><div class="qty-label">units &nbsp;·&nbsp; Room 320 + Room 339</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">Phase 2 — Optics &amp; Support</div>
+    <div class="optics-grid">
+      <div class="optic-card">
+        <div class="oc-type" style="color:var(--navy)">SM Fiber · SFP+ · New IDF Uplinks — Core-Side</div>
+        <div class="oc-model">SFP-10G-LR</div>
+        <div class="oc-msrp">$595 ea · Ext: $4,760</div>
+        <div class="oc-qty">8 optics — 4 new IDFs × 2 uplinks · seats in 7050SX3-24YC4C</div>
+        <div class="oc-desc">New IDF uplinks for Rooms 335, 334, 320, 339. Confirm core port availability for 4 additional connections.</div>
+      </div>
+      <div class="optic-card">
+        <div class="oc-type" style="color:var(--navy)">SM Fiber · SFP+ · New IDF Uplinks — IDF-Side</div>
+        <div class="oc-model">SFP-10G-LR</div>
+        <div class="oc-msrp">$595 ea · Ext: $4,760</div>
+        <div class="oc-qty">8 optics — 4 new IDFs × 2 uplinks · seats in 720XP SFP28</div>
+        <div class="oc-desc">New IDF uplinks for Rooms 335, 334, 320, 339. Seats in 720XP SFP28 uplink ports at each new IDF switch.</div>
+      </div>
+      <div class="optic-card">
+        <div class="oc-type" style="color:var(--navy)">SM Fiber · SFP+ · MM→SM Swap — Core-Side</div>
+        <div class="oc-model">SFP-10G-LR</div>
+        <div class="oc-msrp">$595 ea · Ext: $4,760</div>
+        <div class="oc-qty">8 optics — 4 legacy IDFs × 2 uplinks · seats in 7050SX3-24YC4C</div>
+        <div class="oc-desc">Replaces SFP-10G-SR in core SFP28 ports at 4 legacy MM IDFs. Phase 1 SR optics become spares.</div>
+      </div>
+      <div class="optic-card">
+        <div class="oc-type" style="color:var(--navy)">SM Fiber · SFP+ · MM→SM Swap — IDF-Side</div>
+        <div class="oc-model">SFP-10G-LR</div>
+        <div class="oc-msrp">$595 ea · Ext: $4,760</div>
+        <div class="oc-qty">8 optics — 4 legacy IDFs × 2 uplinks · seats in 720XP SFP28</div>
+        <div class="oc-desc">Replaces SFP-10G-SR in 720XP SFP28 uplink ports at 4 legacy MM IDFs. Phase 1 SR optics become spares.</div>
+      </div>
+      <div class="optic-card" style="background:var(--green-light)">
+        <div class="oc-type" style="color:var(--green)">Phase 2 MSRP Summary</div>
+        <div class="oc-model" style="color:var(--green)">Switches + Optics</div>
+        <div class="oc-msrp" style="color:var(--green);font-size:13px">$59,572 hardware MSRP</div>
+        <div class="oc-qty" style="color:var(--purple)">+ $7,680 · 5-yr A-Care MSRP</div>
+        <div class="oc-desc">4 switches ($40,428) + MM swap optics ($9,520, split core/IDF) + new IDF optics ($9,520, split core/IDF) — excl. CUE &amp; rack kits.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+  <section>
+    <div class="section-label">Phase 2 — 25G Optic Upgrade Option</div>
+    <div class="upgrade-callout">
+      <div class="uc-label">25G Optic Upgrade — Phase 2</div>
+      <div class="uc-body">All Phase 2 runs are single-mode. Upgrading to 25G requires replacing all Phase 2 SFP-10G-LR optics with SFP-25G-LR — no switch or cabling changes.<br><br>
+        <span class="uc-delta">32× SFP-25G-LR</span> &nbsp;(SM — MM→SM swap optics + new IDF uplinks) &nbsp;@ $1,595 ea = <span class="uc-delta">$51,040</span><br><br>
+        <strong style="color:var(--navy)">Phase 2 total — 25G optics: $51,040</strong> &nbsp;·&nbsp; <span style="color:var(--text-muted)">vs. $19,040 at 10G &nbsp;·&nbsp; upgrade delta: +$32,000</span>
+      </div>
+    </div>
+  </section>
+
+
+<!-- Open Items -->
+<section>
+  <div class="section-label">Open Items for Arista SE Review &amp; Site Visit</div>
+  <table class="notes-table">
+    <thead><tr><th>Topic</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Legacy MM IDF locations</td><td>4 legacy multimode IDFs currently running Cisco hardware. Specific locations and switch models TBD — confirmed at site visit. MM fiber runs confirmed functional; no distance concerns.</td></tr>
+      <tr><td>Core port allocation</td><td>DCS-7050SX3-24YC4C-S-F has 24 × 1/10/25G SFP28 downlink ports + 4 × 100G QSFP uplinks. Phase 1: 12 IDF uplinks + 2 MLAG peer-link = 14 of 24 ports used per core. Phase 2: 18 of 24 used. 4 × QSFP ports unused in this design.</td></tr>
+
+      <tr><td>MLAG peer-link config</td><td>2 redundant 10GBase peer-links between Core-A and Core-B (SFP-10G-LR, SM). Confirm MLAG domain config, peer-link port assignment, and LACP/spanning-tree settings with Arista SE.</td></tr>
+      <tr><td>A-Care 5-yr bundled pricing</td><td>5-yr figures use monthly A-Care NBD rate × 60 (April 2026 price list). Core: SVC-7050SX3-24YC4CS-1M-NB at $135/mo. Ask SE whether multi-year bundled SKUs price lower than monthly × 60.</td></tr>
+      <tr><td>CloudVision CUE term</td><td>SS-CVSC-G2-SWITCH-1M at 6/switch/month list rate. Confirm 1-, 3-, or 5-year subscription term pricing with SE. 19 switches total across both phases.</td></tr>
+      <tr><td>Renovation coordination</td><td>Hawaiʻi Convention Center is currently undergoing renovation. Confirm IDF locations, fiber route accessibility, and installation windows with facility team before scheduling site visit.</td></tr>
+      <tr><td>Deal Registration</td><td>All MSRP from Arista April 2026 USD price list. Actual Deal Reg pricing reflects partner discount tier. Use IRIS for confirmed inputs to Deal Reg submission.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════ NETWORK TOPOLOGY DIAGRAM ── -->
+<section style="margin-bottom:32px">
+  <div class="section-label">Network Topology — MLAG Active/Standby Design</div>
+
+  <svg width="100%" viewBox="0 0 920 980" role="img" style="display:block;margin-top:4px" xmlns="http://www.w3.org/2000/svg">
+    <title>Hawaiʻi Convention Center — Arista network topology</title>
+    <desc>Two-tier MLAG network: a pair of 7050SX3-24YC4C core switches in the MDF connected by 25G DAC peer-links, serving 16 IDF access switches via dual 10G SM or MM fiber uplinks in active/standby MLAG.</desc>
+    <defs>
+      <marker id="topo-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+
+    <!-- ═══ MDF container — y:20, h:160 → bottom edge y:180 ═══ -->
+    <rect x="30" y="20" width="840" height="160" rx="10" fill="#EEF7F9" stroke="#22A5B7" stroke-width="1" stroke-dasharray="6 3"/>
+    <text x="46" y="40" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#22A5B7" letter-spacing="0.1em">MDF — CORE LAYER</text>
+
+    <!-- Core-A: x:130 cx:245, y:50 bottom:120 -->
+    <rect x="130" y="50" width="230" height="70" rx="6" fill="#0E313A" stroke="#22A5B7" stroke-width="1"/>
+    <text x="245" y="74" font-family="'IBM Plex Sans',sans-serif" font-size="13" font-weight="600" fill="#ffffff" text-anchor="middle">Core-A</text>
+    <text x="245" y="92" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#22A5B7" text-anchor="middle">DCS-7050SX3-24YC4C-S-F</text>
+    <text x="245" y="108" font-family="'IBM Plex Mono',monospace" font-size="9" fill="rgba(255,255,255,0.45)" text-anchor="middle">24×SFP28  ·  4×100G QSFP</text>
+
+    <!-- Core-B: x:540 cx:655, y:50 bottom:120 -->
+    <rect x="540" y="50" width="230" height="70" rx="6" fill="#0E313A" stroke="#22A5B7" stroke-width="1"/>
+    <text x="655" y="74" font-family="'IBM Plex Sans',sans-serif" font-size="13" font-weight="600" fill="#ffffff" text-anchor="middle">Core-B</text>
+    <text x="655" y="92" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#22A5B7" text-anchor="middle">DCS-7050SX3-24YC4C-S-F</text>
+    <text x="655" y="108" font-family="'IBM Plex Mono',monospace" font-size="9" fill="rgba(255,255,255,0.45)" text-anchor="middle">24×SFP28  ·  4×100G QSFP</text>
+
+    <!-- DAC peer-links between cores -->
+    <line x1="360" y1="76" x2="540" y2="76" stroke="#22A5B7" stroke-width="2.5" stroke-dasharray="7 3"/>
+    <line x1="360" y1="94" x2="540" y2="94" stroke="#22A5B7" stroke-width="2.5" stroke-dasharray="7 3"/>
+    <text x="450" y="68" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#22A5B7" text-anchor="middle">25G DAC ×2  ·  CAB-S-S-25G-3M</text>
+
+    <!-- MLAG domain pill -->
+    <rect x="310" y="134" width="280" height="20" rx="4" fill="none" stroke="#22A5B7" stroke-width="0.5" stroke-dasharray="4 3"/>
+    <text x="450" y="148" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#22A5B7" text-anchor="middle">MLAG active / standby domain</text>
+
+    <!-- ═══ UPLINK ROUTING ZONE — 180 to 320, 140px clear space ═══ -->
+    <!-- Core downlink stubs: Core-A at x:245, Core-B at x:655, exit bottom of MDF at y:180 -->
+    <!-- Each IDF sends active line straight up to a horizontal bus at y:320, then routes to core exit point -->
+
+    <!-- Active bus line to Core-A (solid) at y:314, terminates at x:245 y:180 -->
+    <!-- Standby bus line to Core-B (dashed) at y:308, terminates at x:655 y:180 -->
+
+    <!-- Core A exit stub -->
+    <line x1="245" y1="120" x2="245" y2="314" stroke="#0E313A" stroke-width="1" stroke-dasharray="2 2" opacity="0.3"/>
+    <!-- Core B exit stub -->
+    <line x1="655" y1="120" x2="655" y2="308" stroke="#0E313A" stroke-width="1" stroke-dasharray="2 2" opacity="0.3"/>
+    <!-- Core-B standby routing column -->
+    <line x1="882" y1="178" x2="882" y2="612" stroke="#0E313A" stroke-width="0.75" stroke-dasharray="2 4" opacity="0.15"/>
+    <text x="886" y="400" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#9B9890" transform="rotate(90,886,400)">standby uplinks → Core-B</text>
+
+    <!-- ═══ PHASE 1 SM IDFs — top of boxes at y:340 ═══ -->
+    <text x="30" y="332" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#6B6860" letter-spacing="0.08em">PHASE 1 — 8× SINGLE-MODE IDFs  (SFP-10G-LR)</text>
+
+    <!-- IDF boxes at y:340, height:54, bottom:394 -->
+    <!-- IDF 1  cx:75 -->
+    <rect x="30"  y="340" width="90" height="54" rx="5" fill="#E5EEF8" stroke="#0E313A" stroke-width="0.75"/>
+    <text x="75"  y="360" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#0E313A" text-anchor="middle">IDF 1</text>
+    <text x="75"  y="376" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-24Y6</text>
+    <text x="75"  y="388" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">24-port</text>
+
+    <!-- IDF 2  cx:177 -->
+    <rect x="132" y="340" width="90" height="54" rx="5" fill="#E5EEF8" stroke="#0E313A" stroke-width="0.75"/>
+    <text x="177" y="360" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#0E313A" text-anchor="middle">IDF 2</text>
+    <text x="177" y="376" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-24Y6</text>
+    <text x="177" y="388" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">24-port</text>
+
+    <!-- IDF 3  cx:279 -->
+    <rect x="234" y="340" width="90" height="54" rx="5" fill="#E5EEF8" stroke="#0E313A" stroke-width="0.75"/>
+    <text x="279" y="360" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#0E313A" text-anchor="middle">IDF 3</text>
+    <text x="279" y="376" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-48Y6</text>
+    <text x="279" y="388" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">48-port</text>
+
+    <!-- IDF 4  cx:381 -->
+    <rect x="336" y="340" width="90" height="54" rx="5" fill="#E5EEF8" stroke="#0E313A" stroke-width="0.75"/>
+    <text x="381" y="360" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#0E313A" text-anchor="middle">IDF 4</text>
+    <text x="381" y="376" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-48Y6</text>
+    <text x="381" y="388" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">48-port</text>
+
+    <!-- IDF 5  cx:483 -->
+    <rect x="438" y="340" width="90" height="54" rx="5" fill="#E5EEF8" stroke="#0E313A" stroke-width="0.75"/>
+    <text x="483" y="360" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#0E313A" text-anchor="middle">IDF 5</text>
+    <text x="483" y="376" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-48Y6</text>
+    <text x="483" y="388" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">48-port</text>
+
+    <!-- IDF 6  cx:585 -->
+    <rect x="540" y="340" width="90" height="54" rx="5" fill="#E5EEF8" stroke="#0E313A" stroke-width="0.75"/>
+    <text x="585" y="360" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#0E313A" text-anchor="middle">IDF 6</text>
+    <text x="585" y="376" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-48Y6</text>
+    <text x="585" y="388" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">48-port</text>
+
+    <!-- IDF 7  cx:687 -->
+    <rect x="642" y="340" width="90" height="54" rx="5" fill="#E5EEF8" stroke="#0E313A" stroke-width="0.75"/>
+    <text x="687" y="360" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#0E313A" text-anchor="middle">IDF 7</text>
+    <text x="687" y="376" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-48Y6</text>
+    <text x="687" y="388" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">48-port</text>
+
+    <!-- IDF 8  cx:789 -->
+    <rect x="744" y="340" width="90" height="54" rx="5" fill="#E5EEF8" stroke="#0E313A" stroke-width="0.75"/>
+    <text x="789" y="360" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#0E313A" text-anchor="middle">IDF 8</text>
+    <text x="789" y="376" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-24Y6</text>
+    <text x="789" y="388" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">24-port</text>
+
+    <!-- SM uplinks: vertical stub up from IDF top, L-bend to horizontal bus, then up to core -->
+    <!-- Active (solid) → Core-A at x:245, drops to y:314 -->
+    <!-- Standby (dashed) → Core-B at x:655, drops to y:308 -->
+    <path d="M75 340 L75 314 L245 314 L245 180" fill="none" stroke="#0E313A" stroke-width="1" marker-end="url(#topo-arrow)"/>
+    <path d="M75 340 L75 308 L882 308 L882 178 L655 178" fill="none" stroke="#0E313A" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)"/>
+
+    <path d="M177 340 L177 320 L245 320 L245 180" fill="none" stroke="#0E313A" stroke-width="1" marker-end="url(#topo-arrow)" opacity="0.9"/>
+    <path d="M177 340 L177 300 L882 300 L882 178 L655 178" fill="none" stroke="#0E313A" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)" opacity="0.9"/>
+
+    <path d="M279 340 L279 326 L245 326 L245 180" fill="none" stroke="#0E313A" stroke-width="1" marker-end="url(#topo-arrow)" opacity="0.8"/>
+    <path d="M279 340 L279 292 L882 292 L882 178 L655 178" fill="none" stroke="#0E313A" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)" opacity="0.8"/>
+
+    <path d="M381 340 L381 332 L245 332 L245 180" fill="none" stroke="#0E313A" stroke-width="1" marker-end="url(#topo-arrow)" opacity="0.7"/>
+    <path d="M381 340 L381 284 L882 284 L882 178 L655 178" fill="none" stroke="#0E313A" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)" opacity="0.7"/>
+
+    <path d="M483 340 L483 338 L245 338 L245 180" fill="none" stroke="#0E313A" stroke-width="1" marker-end="url(#topo-arrow)" opacity="0.65"/>
+    <path d="M483 340 L483 276 L882 276 L882 178 L655 178" fill="none" stroke="#0E313A" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)" opacity="0.65"/>
+
+    <path d="M585 340 L585 344 L242 344 L242 180" fill="none" stroke="#0E313A" stroke-width="1" marker-end="url(#topo-arrow)" opacity="0.6"/>
+    <path d="M585 340 L585 268 L882 268 L882 178 L655 178" fill="none" stroke="#0E313A" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)" opacity="0.6"/>
+
+    <path d="M687 340 L687 350 L239 350 L239 180" fill="none" stroke="#0E313A" stroke-width="1" marker-end="url(#topo-arrow)" opacity="0.55"/>
+    <path d="M687 340 L687 260 L882 260 L882 178 L655 178" fill="none" stroke="#0E313A" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)" opacity="0.55"/>
+
+    <path d="M789 340 L789 356 L236 356 L236 180" fill="none" stroke="#0E313A" stroke-width="1" marker-end="url(#topo-arrow)" opacity="0.5"/>
+    <path d="M789 340 L789 252 L882 252 L882 178 L655 178" fill="none" stroke="#0E313A" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)" opacity="0.5"/>
+
+    <!-- ═══ PHASE 1 MM IDFs — y:470 ═══ -->
+    <text x="30" y="462" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#A04508" letter-spacing="0.08em">PHASE 1 — 4× MULTIMODE IDFs  (SFP-10G-SR)  ·  legacy Cisco hardware</text>
+
+    <!-- IDF 9  cx:75 -->
+    <rect x="30"  y="472" width="90" height="54" rx="5" fill="#FFFBEB" stroke="#A04508" stroke-width="0.75"/>
+    <text x="75"  y="492" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#A04508" text-anchor="middle">IDF 9</text>
+    <text x="75"  y="508" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-24Y6</text>
+    <text x="75"  y="520" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">24-port</text>
+
+    <!-- IDF 10 cx:177 -->
+    <rect x="132" y="472" width="90" height="54" rx="5" fill="#FFFBEB" stroke="#A04508" stroke-width="0.75"/>
+    <text x="177" y="492" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#A04508" text-anchor="middle">IDF 10</text>
+    <text x="177" y="508" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-24Y6</text>
+    <text x="177" y="520" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">24-port</text>
+
+    <!-- IDF 11 cx:279 -->
+    <rect x="234" y="472" width="90" height="54" rx="5" fill="#FFFBEB" stroke="#A04508" stroke-width="0.75"/>
+    <text x="279" y="492" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#A04508" text-anchor="middle">IDF 11</text>
+    <text x="279" y="508" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-48Y6</text>
+    <text x="279" y="520" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">48-port</text>
+
+    <!-- IDF 12 cx:381 -->
+    <rect x="336" y="472" width="90" height="54" rx="5" fill="#FFFBEB" stroke="#A04508" stroke-width="0.75"/>
+    <text x="381" y="492" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#A04508" text-anchor="middle">IDF 12</text>
+    <text x="381" y="508" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-48Y6</text>
+    <text x="381" y="520" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">48-port</text>
+
+    <!-- Cold spare cx:483 -->
+    <rect x="438" y="472" width="90" height="54" rx="5" fill="#F7F5F0" stroke="#9B9890" stroke-width="0.75" stroke-dasharray="5 3"/>
+    <text x="483" y="492" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#9B9890" text-anchor="middle">Spare</text>
+    <text x="483" y="508" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#9B9890" text-anchor="middle">720XP-48Y6</text>
+    <text x="483" y="520" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#9B9890" text-anchor="middle">cold spare</text>
+
+    <!-- MM uplinks — amber, L-bend routing -->
+    <path d="M75 472 L75 446 L245 446 L245 180" fill="none" stroke="#A04508" stroke-width="1" marker-end="url(#topo-arrow)"/>
+    <path d="M75 472 L75 440 L882 440 L882 178 L655 178" fill="none" stroke="#A04508" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)"/>
+
+    <path d="M177 472 L177 452 L245 452 L245 180" fill="none" stroke="#A04508" stroke-width="1" marker-end="url(#topo-arrow)" opacity="0.85"/>
+    <path d="M177 472 L177 432 L882 432 L882 178 L655 178" fill="none" stroke="#A04508" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)" opacity="0.85"/>
+
+    <path d="M279 472 L279 458 L245 458 L245 180" fill="none" stroke="#A04508" stroke-width="1" marker-end="url(#topo-arrow)" opacity="0.7"/>
+    <path d="M279 472 L279 424 L882 424 L882 178 L655 178" fill="none" stroke="#A04508" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)" opacity="0.7"/>
+
+    <path d="M381 472 L381 464 L245 464 L245 180" fill="none" stroke="#A04508" stroke-width="1" marker-end="url(#topo-arrow)" opacity="0.55"/>
+    <path d="M381 472 L381 416 L882 416 L882 178 L655 178" fill="none" stroke="#A04508" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)" opacity="0.55"/>
+
+    <!-- Port utilisation callout — floated right of MM IDFs -->
+    <rect x="560" y="464" width="310" height="90" rx="6" fill="#EEF7F9" stroke="#22A5B7" stroke-width="0.5"/>
+    <text x="576" y="482" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#22A5B7" letter-spacing="0.08em">PORT UTILISATION (per core)</text>
+    <text x="576" y="500" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#6B6860">P1: 12 uplinks + 2 peer-link = 14 / 24 ports</text>
+    <text x="576" y="516" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#6B6860">P2: 16 uplinks + 2 peer-link = 18 / 24 ports</text>
+    <text x="576" y="532" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#6B6860">4 × 100G QSFP: unused in this design</text>
+    <text x="576" y="547" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#9B9890">6 SFP28 ports remain free after Phase 2</text>
+
+    <!-- ═══ PHASE 2 IDFs — y:610 ═══ -->
+    <text x="30" y="602" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#157A3A" letter-spacing="0.08em">PHASE 2 — 4× NEW IDFs  /  Q4 2027  (SFP-10G-LR, SM)</text>
+
+    <!-- Rm 335 cx:75 -->
+    <rect x="30"  y="612" width="90" height="54" rx="5" fill="#E8FAF0" stroke="#157A3A" stroke-width="0.75"/>
+    <text x="75"  y="632" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#157A3A" text-anchor="middle">Rm 335</text>
+    <text x="75"  y="648" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-24Y6</text>
+    <text x="75"  y="660" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">24-port SM</text>
+
+    <!-- Rm 334 cx:177 -->
+    <rect x="132" y="612" width="90" height="54" rx="5" fill="#E8FAF0" stroke="#157A3A" stroke-width="0.75"/>
+    <text x="177" y="632" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#157A3A" text-anchor="middle">Rm 334</text>
+    <text x="177" y="648" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-24Y6</text>
+    <text x="177" y="660" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">24-port SM</text>
+
+    <!-- Rm 320 cx:279 -->
+    <rect x="234" y="612" width="90" height="54" rx="5" fill="#E8FAF0" stroke="#157A3A" stroke-width="0.75"/>
+    <text x="279" y="632" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#157A3A" text-anchor="middle">Rm 320</text>
+    <text x="279" y="648" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-24Y6</text>
+    <text x="279" y="660" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">24-port SM</text>
+
+    <!-- Rm 339 cx:381 -->
+    <rect x="336" y="612" width="90" height="54" rx="5" fill="#E8FAF0" stroke="#157A3A" stroke-width="0.75"/>
+    <text x="381" y="632" font-family="'IBM Plex Sans',sans-serif" font-size="11" font-weight="600" fill="#157A3A" text-anchor="middle">Rm 339</text>
+    <text x="381" y="648" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">720XP-24Y6</text>
+    <text x="381" y="660" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#6B6860" text-anchor="middle">24-port SM</text>
+
+    <!-- Phase 2 uplinks — green, L-bend routing -->
+    <path d="M75 612 L75 586 L245 586 L245 180" fill="none" stroke="#157A3A" stroke-width="1" marker-end="url(#topo-arrow)"/>
+    <path d="M75 612 L75 578 L882 578 L882 178 L655 178" fill="none" stroke="#157A3A" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)"/>
+
+    <path d="M177 612 L177 592 L245 592 L245 180" fill="none" stroke="#157A3A" stroke-width="1" marker-end="url(#topo-arrow)" opacity="0.85"/>
+    <path d="M177 612 L177 570 L882 570 L882 178 L655 178" fill="none" stroke="#157A3A" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)" opacity="0.85"/>
+
+    <path d="M279 612 L279 598 L245 598 L245 180" fill="none" stroke="#157A3A" stroke-width="1" marker-end="url(#topo-arrow)" opacity="0.7"/>
+    <path d="M279 612 L279 562 L882 562 L882 178 L655 178" fill="none" stroke="#157A3A" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)" opacity="0.7"/>
+
+    <path d="M381 612 L381 604 L245 604 L245 180" fill="none" stroke="#157A3A" stroke-width="1" marker-end="url(#topo-arrow)" opacity="0.55"/>
+    <path d="M381 612 L381 554 L882 554 L882 178 L655 178" fill="none" stroke="#157A3A" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#topo-arrow)" opacity="0.55"/>
+
+    <!-- ═══ LEGEND — y:700 ═══ -->
+    <rect x="30" y="700" width="840" height="120" rx="8" fill="#F7F5F0" stroke="#D8D4CC" stroke-width="0.5"/>
+    <text x="46" y="718" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#6B6860" letter-spacing="0.08em">LEGEND</text>
+
+    <line x1="46" y1="736" x2="110" y2="736" stroke="#22A5B7" stroke-width="2.5" stroke-dasharray="7 3"/>
+    <text x="118" y="740" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#6B6860">25G DAC twinax — MLAG peer-link (CAB-S-S-25G-3M ×2)</text>
+
+    <line x1="46" y1="754" x2="110" y2="754" stroke="#0E313A" stroke-width="1.5" marker-end="url(#topo-arrow)"/>
+    <text x="118" y="758" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#6B6860">10G SM active uplink (SFP-10G-LR)</text>
+
+    <line x1="46" y1="770" x2="110" y2="770" stroke="#0E313A" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#topo-arrow)"/>
+    <text x="118" y="774" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#6B6860">10G SM standby uplink (SFP-10G-LR)</text>
+
+    <line x1="46" y1="786" x2="110" y2="786" stroke="#A04508" stroke-width="1.5" marker-end="url(#topo-arrow)"/>
+    <text x="118" y="790" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#6B6860">10G MM active uplink (SFP-10G-SR) — Phase 1 legacy only</text>
+
+    <line x1="46" y1="802" x2="110" y2="802" stroke="#157A3A" stroke-width="1.5" marker-end="url(#topo-arrow)"/>
+    <text x="118" y="806" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#6B6860">10G SM — Phase 2 new IDFs (solid = active, dashed = standby)</text>
+
+    <!-- Swatches right column -->
+    <rect x="500" y="730" width="12" height="12" rx="2" fill="#E5EEF8" stroke="#0E313A" stroke-width="0.75"/>
+    <text x="518" y="741" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#6B6860">720XP SM IDF — Phase 1</text>
+    <rect x="500" y="750" width="12" height="12" rx="2" fill="#FFFBEB" stroke="#A04508" stroke-width="0.75"/>
+    <text x="518" y="761" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#6B6860">720XP MM IDF — legacy, Phase 1</text>
+    <rect x="500" y="770" width="12" height="12" rx="2" fill="#E8FAF0" stroke="#157A3A" stroke-width="0.75"/>
+    <text x="518" y="781" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#6B6860">720XP new IDF — Phase 2</text>
+    <rect x="500" y="790" width="12" height="12" rx="2" fill="#F7F5F0" stroke="#9B9890" stroke-width="0.75" stroke-dasharray="4 2"/>
+    <text x="518" y="801" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#9B9890">720XP-48Y6 cold spare (MDF)</text>
+    <rect x="500" y="810" width="12" height="12" rx="2" fill="#0E313A" stroke="#22A5B7" stroke-width="0.75"/>
+    <text x="518" y="821" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#6B6860">7050SX3-24YC4C core switch (MLAG)</text>
+  </svg>
+</section>
+
+</div><!-- end .page -->
+
+<div class="footer-bar">
+  <span>Rectitude 369, LLC &nbsp;·&nbsp; Hawaiʻi Convention Center &nbsp;·&nbsp; Confidential Draft</span>
+  <span>866.665.8132 &nbsp;·&nbsp; rectitude369.com &nbsp;·&nbsp; 594 Sawdust Rd, Suite 383, The Woodlands, TX 77380</span>
+</div>
+
+</body>
+</html>
